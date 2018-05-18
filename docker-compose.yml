@@ -1,0 +1,139 @@
+gitlab-mysql:
+  restart: always
+  image: mysql:5.7
+  environment:
+    - MYSQL_USER=gitlab
+    - MYSQL_PASSWORD=orangearchp@ssword
+    - MYSQL_DATABASE=gitlabhq_production
+    - MYSQL_ROOT_PASSWORD=orangearchp@ssword
+  ports:
+    - "3333:3306"
+  volumes:
+    - /srv/docker/gitlab/mysql:/var/lib/mysql
+  command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+gitlab:
+  restart: always
+  image: sameersbn/gitlab:10.3.5
+  links:
+    - gitlab-redis:redisio
+    - gitlab-mysql:mysql
+  environment:
+
+    - DEBUG=false
+    - TZ=Asia/Tokyo
+    - GITLAB_TIMEZONE=Tokyo
+
+    - GITLAB_SECRETS_DB_KEY_BASE=long-and-random-alphanumeric-string
+    - GITLAB_SECRETS_SECRET_KEY_BASE=long-and-random-alpha-numeric-string
+    - GITLAB_SECRETS_OTP_KEY_BASE=long-and-random-alpha-numeric-string
+
+    - GITLAB_HOST=192.168.0.131
+    - GITLAB_PORT=
+    - GITLAB_SSH_PORT=
+    - GITLAB_RELATIVE_URL_ROOT=/gitlab
+
+    - GITLAB_NOTIFY_ON_BROKEN_BUILDS=true
+    - GITLAB_NOTIFY_PUSHER=false
+
+    - GITLAB_EMAIL=dcs_2017001@orangearch.co.jp
+    - GITLAB_EMAIL_REPLY_TO=dcs_2017001@orangearch.co.jp
+    - GITLAB_INCOMING_EMAIL_ADDRESS=dcs_2017001@orangearch.co.jp
+
+    - GITLAB_BACKUP_SCHEDULE=daily
+    - GITLAB_BACKUP_TIME=01:00
+
+    - SMTP_ENABLED=ture
+    - SMTP_DOMAIN=www.orangearch.co.jp
+    - SMTP_HOST=mail.orangearch.co.jp
+    - SMTP_PORT=587
+    - SMTP_USER=dcs_2017001@orangearch.co.jp
+    - SMTP_PASS=100%orange
+    - SMTP_STARTTLS=false
+    - SMTP_AUTHENTICATION=plain
+
+    - IMAP_ENABLED=false
+    - IMAP_HOST=imap.orangearch.co.jp
+    - IMAP_PORT=993
+    - IMAP_USER=dcs_2017001@orangearch.co.jp
+    - IMAP_PASS=100%orange
+    - IMAP_SSL=true
+    - IMAP_STARTTLS=false
+  volumes:
+   - /srv/docker/gitlab/gitlab:/home/git/data
+   - /srv/docker/gitlab/log:/var/log/gitlab
+   - /srv/docker/gitlab/gitlab/repogitories:/home/git/data/repositories
+gitlab-redis:
+  restart: always
+  image: redis:4.0.7
+  volumes:
+    - /srv/docker/gitlab/redis:/var/lib/redis
+redmine-mysql:
+  restart: always
+  image: mysql:5.7
+  environment:
+    - MYSQL_USER=redmine
+    - MYSQL_PASSWORD=orangearchp@ssword
+    - MYSQL_DATABASE=redmine_db
+    - MYSQL_ROOT_PASSWORD=orangearchp@ssword
+  ports:
+    - "3332:3306"
+  volumes:
+    - /srv/docker/redmine/mysql:/var/lib/mysql
+  command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+redmine:
+  restart: always
+  image: sameersbn/redmine:3.3.5
+  links:
+    - redmine-mysql:mysql
+  environment:
+    - TZ=Asia/Tokyo
+
+    - REDMINE_PORT=
+    - REDMINE_HTTPS=false
+    - REDMINE_RELATIVE_URL_ROOT=/redmine
+    - REDMINE_SECRET_TOKEN=
+
+    - REDMINE_SUDO_MODE_ENABLED=false
+    - REDMINE_SUDO_MODE_TIMEOUT=15
+
+    - REDMINE_CONCURRENT_UPLOADS=2
+
+    - REDMINE_BACKUP_SCHEDULE=
+    - REDMINE_BACKUP_EXPIRY=
+    - REDMINE_BACKUP_TIME=
+
+    - SMTP_ENABLED=true
+    - SMTP_METHOD=smtp
+    - SMTP_DOMAIN=mail.orangearch.co.jp
+    - SMTP_HOST=mail.orangearch.co.jp
+    - SMTP_PORT=587
+    - SMTP_USER=dcs_2017001@orangearch.co.jp
+    - SMTP_PASS=100%orange
+    - SMTP_STARTTLS=false
+    - SMTP_AUTHENTICATION=:plain
+
+    - IMAP_ENABLED=false
+    - IMAP_HOST=imap.orangearch.co.jp
+    - IMAP_PORT=993
+    - IMAP_USER=dcs_2017001@orangearch.co.jp
+    - IMAP_PASS=100%orange
+    - IMAP_SSL=true
+    - IMAP_INTERVAL=30
+  volumes:
+    - /srv/docker/redmine/redmine:/home/redmine/data
+jenkins:
+  restart: always
+  image: jenkins:latest
+  environment:
+    - JENKINS_OPTS=--prefix=/jenkins
+  volumes:
+    - /srv/docker/jenkins/jenkins:/var/jenkins_home
+proxy:
+  build: proxy
+  links:
+    - gitlab:gitlab
+    - redmine:redmine
+    - jenkins:jenkins
+  ports:
+    - "80:80"
+
