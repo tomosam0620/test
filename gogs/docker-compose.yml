@@ -1,0 +1,93 @@
+gogs-mysql:
+  restart: always
+  image: mysql:5.7
+  environment:
+    - MYSQL_USER=gogs
+    - MYSQL_PASSWORD=orangearchp@ssword
+    - MYSQL_DATABASE=gogshq_production
+    - MYSQL_ROOT_PASSWORD=orangearchp@ssword
+  ports:
+    - "3333:3306"
+  volumes:
+    - /srv/docker/gogs/mysql:/var/lib/mysql
+  command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+gogs:
+  restart: always
+  image: gogs/gogs:0.11.43
+  ports:
+    - "3000:3000"
+    - "50022:22"
+  links:
+    - gogs-mysql
+  volumes:
+   - /srv/docker/gogs/gogs:/data
+redmine-mysql:
+  restart: always
+  image: mysql:5.7
+  environment:
+    - MYSQL_USER=redmine
+    - MYSQL_PASSWORD=orangearchp@ssword
+    - MYSQL_DATABASE=redmine_db
+    - MYSQL_ROOT_PASSWORD=orangearchp@ssword
+  ports:
+    - "3332:3306"
+  volumes:
+    - /srv/docker/redmine/mysql:/var/lib/mysql
+  command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+redmine:
+  restart: always
+  image: sameersbn/redmine:3.3.5
+  links:
+    - redmine-mysql:mysql
+  environment:
+    - TZ=Asia/Tokyo
+
+    - REDMINE_PORT=
+    - REDMINE_HTTPS=false
+    - REDMINE_RELATIVE_URL_ROOT=/redmine
+    - REDMINE_SECRET_TOKEN=
+
+    - REDMINE_SUDO_MODE_ENABLED=false
+    - REDMINE_SUDO_MODE_TIMEOUT=15
+
+    - REDMINE_CONCURRENT_UPLOADS=2
+
+    - REDMINE_BACKUP_SCHEDULE=
+    - REDMINE_BACKUP_EXPIRY=
+    - REDMINE_BACKUP_TIME=
+
+    - SMTP_ENABLED=true
+    - SMTP_METHOD=smtp
+    - SMTP_DOMAIN=mail.orangearch.co.jp
+    - SMTP_HOST=mail.orangearch.co.jp
+    - SMTP_PORT=587
+    - SMTP_USER=dcs_2017001@orangearch.co.jp
+    - SMTP_PASS=100%orange
+    - SMTP_STARTTLS=false
+    - SMTP_AUTHENTICATION=:plain
+
+    - IMAP_ENABLED=false
+    - IMAP_HOST=imap.orangearch.co.jp
+    - IMAP_PORT=993
+    - IMAP_USER=dcs_2017001@orangearch.co.jp
+    - IMAP_PASS=100%orange
+    - IMAP_SSL=true
+    - IMAP_INTERVAL=30
+  volumes:
+    - /srv/docker/redmine/redmine:/home/redmine/data
+jenkins:
+  restart: always
+  image: jenkins:latest
+  environment:
+    - JENKINS_OPTS=--prefix=/jenkins
+  volumes:
+    - /srv/docker/jenkins/jenkins:/var/jenkins_home
+proxy:
+  build: proxy
+  links:
+    - gogs:gogs
+    - redmine:redmine
+    - jenkins:jenkins
+  ports:
+    - "80:80"
+
